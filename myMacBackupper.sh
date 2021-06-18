@@ -1,5 +1,10 @@
 #!/bin/bash  
 
+#IMPLEMENT A SYSTEM TO RECOGNIZE OS FOR LOGGING IN LINUX AS WELL
+# CMD to GET system info in MAC : system_profiler SPSoftwareDataType | grep "System Version:"
+# OUTPUT => System Version: macOS 10.12.6 (16G2136)
+# IN Linux : cat /etc/*-release
+
 #***ADMIN_MAIL Mail***
 
 # ADMIN_MAIL="aguillin@protonmail.com"
@@ -29,6 +34,7 @@ EXEC_DATE=$(date "+%d/%m/%y")
 # ***********************
 
 function log() {
+	#Custom logging system for MAC because built in loggin is just weird ...  
 	#Standard log files destination for Apps
 	local logs_path="$HOME/Library/Logs"
 	local log_folder_name="myMacBackupper"
