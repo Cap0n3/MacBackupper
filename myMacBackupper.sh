@@ -7,7 +7,7 @@
 
 #WHAT FOLDER DO WANT TO BCKUP ? INSERT PATH HERE :
 FOLDER_PATHS=('/Users/kalhal/Documents/Notes_Network'\ 
-	''\ 
+	'/Users/kalhal/Documents/Google_Cloud'\ 
 	''\
 	'')
 
@@ -21,9 +21,6 @@ BACKUP_PATH='/Users/kalhal/Desktop/Testing'
 
 #***USEFUL DATA***
 
-HOME_DIR=$HOME
-USERNAME=$USER
-HOSTNAME=$(hostname)
 EXEC_TIME=$(date "+%H:%M:%S")
 EXEC_DATE=$(date "+%d/%m/%y")
 
@@ -32,7 +29,7 @@ EXEC_DATE=$(date "+%d/%m/%y")
 # ***********************
 
 function log() {
-	
+	#Standard log files destination for Apps
 	local logs_path="$HOME/Library/Logs"
 	local log_folder_name="myMacBackupper"
 	local full_path="$logs_path/$log_folder_name"
@@ -42,14 +39,14 @@ function log() {
 	#Create log folder & file if doesn't exit or write 
 	if [ -d $full_path ]
 	then
-		echo "$log_format $log_message" >> $full_path/myMacBackupper.log
+		echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
 	else
 		mkdir $full_path
 		echo "$log_format Created log folder at '$full_path'" >> $full_path/myMacBackupper.log
 		#If there is a log message, log it !
 		if ! [ -z $log_message ]
 		then
-			echo "$log_format $log_message" >> $full_path/myMacBackupper.log
+			echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
 		fi
 	fi
 }
@@ -78,12 +75,13 @@ function sendStatus() {
 # ****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******
 # ********************************************************
 
-#Check source folder
+#Check source folder and output error if necessary
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
 	if ! [ -d $FOLDER_PATH ]
 	then
 		log "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !"
+		echo -e "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !"
 		exit 2		
 fi
 done
@@ -92,6 +90,7 @@ done
 if ! [ -d $BACKUP_PATH ]
 then
 	log "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
+	echo -e "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
 	exit 2	
 fi
 
@@ -108,8 +107,12 @@ do
 	if [ $? -ne 0 ]
 	then
 		log "[ERROR] - An error occured with '$FOLDER_PATH' => $bckup_cmd"
+		echo -e "An error occured with '$FOLDER_PATH' => $bckup_cmd"
+		exit 127
 	else
 		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$BACKUP_PATH'"
+		log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
+		echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
 	fi
 done
 
