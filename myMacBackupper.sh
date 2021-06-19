@@ -1,9 +1,6 @@
 #!/bin/bash  
 
 #IMPLEMENT A SYSTEM TO RECOGNIZE OS FOR LOGGING IN LINUX AS WELL
-# CMD to GET system info in MAC : system_profiler SPSoftwareDataType | grep "System Version:"
-# OUTPUT => System Version: macOS 10.12.6 (16G2136)
-# IN Linux : cat /etc/*-release
 
 #***ADMIN_MAIL Mail***
 
@@ -33,27 +30,65 @@ EXEC_DATE=$(date "+%d/%m/%y")
 # ****** FUNCTIONS ******
 # ***********************
 
+function getOS() {
+	case "$OSTYPE" in
+		solaris*)
+			local os_name="solaris"
+			echo $os_name
+		;;
+		darwin*)
+			local os_name="macOs"
+			echo $os_name
+		;;
+		linux*)
+			local os_name="linux"
+			echo $os_name
+		;;
+		bsd*)
+			local os_name="bsd"
+			echo $os_name
+		;;
+		msys*)
+			local os_name="windows"
+			echo $os_name
+		;;
+	esac
+
+}
+
 function log() {
 	#Custom logging system for MAC because built in loggin is just weird ...  
 	#Standard log files destination for Apps
-	local logs_path="$HOME/Library/Logs"
-	local log_folder_name="myMacBackupper"
-	local full_path="$logs_path/$log_folder_name"
-	local log_format="$EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
 	local log_message=$1
-	
-	#Create log folder & file if doesn't exit or write 
-	if [ -d $full_path ]
+	local severity=$2
+	local os_type=$(getOS)
+
+	if [ $os_type == "macOs" ]
 	then
-		echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
-	else
-		mkdir $full_path
-		echo "$log_format Created log folder at '$full_path'" >> $full_path/myMacBackupper.log
-		#If there is a log message, log it !
-		if ! [ -z $log_message ]
+		local logs_path="$HOME/Library/Logs"
+		local log_folder_name="myMacBackupper"
+		local full_path="$logs_path/$log_folder_name"
+		local log_format="$EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
+		
+		#Create log folder & file if doesn't exit or write 
+		if [ -d $full_path ]
 		then
 			echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
+		else
+			mkdir $full_path
+			echo "$log_format Created log folder at '$full_path'" >> $full_path/myMacBackupper.log
+			#Create log folder and write log message
+			if ! [ -z $log_message ]
+			then
+				echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
+			fi
 		fi
+	elif [ $os_type == "linux" ]
+	then
+		logger -p local7.$severity -t myBackupper $log_message
+	else
+		echo -e "\nThis script is not compatible with your system type ('$os_type') ! Works only on MacOS and Linux.\n"
+		exit 2
 	fi
 }
 
@@ -76,7 +111,6 @@ function sendStatus() {
 	fi	
 }
 
-
 # ********************************************************
 # ****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******
 # ********************************************************
@@ -86,7 +120,7 @@ for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
 	if ! [ -d $FOLDER_PATH ]
 	then
-		log "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !"
+		log "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
 		echo -e "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !"
 		exit 2		
 fi
@@ -95,7 +129,7 @@ done
 #Check destination folder
 if ! [ -d $BACKUP_PATH ]
 then
-	log "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
+	log "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
 	echo -e "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
 	exit 2	
 fi
@@ -112,12 +146,12 @@ do
 	#If it's not a success
 	if [ $? -ne 0 ]
 	then
-		log "[ERROR] - An error occured with '$FOLDER_PATH' => $bckup_cmd"
+		log "[ERROR] - An error occured with '$FOLDER_PATH' => $bckup_cmd" "err"
 		echo -e "An error occured with '$FOLDER_PATH' => $bckup_cmd"
 		exit 127
 	else
-		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$BACKUP_PATH'"
-		log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
+		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$BACKUP_PATH'" "info"
+		log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
 		echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
 	fi
 done
