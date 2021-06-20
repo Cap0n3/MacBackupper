@@ -1,34 +1,21 @@
 #!/bin/bash  
 
-#IMPLEMENT A SYSTEM TO RECOGNIZE OS FOR LOGGING IN LINUX AS WELL
+source myBackupper.config
 
-#***ADMIN_MAIL Mail***
+#==================================================#
+#================== MY BACKUPPER ==================#
+#==================================================#
 
-# ADMIN_MAIL="aguillin@protonmail.com"
-# CC_MAIL=""
-
-#WHAT FOLDER DO WANT TO BCKUP ? INSERT PATH HERE :
-FOLDER_PATHS=('/Users/kalhal/Documents/Notes_Network'\ 
-	'/Users/kalhal/Documents/Google_Cloud'\ 
-	''\
-	'')
-
-#WHERE DO YOU WANT TO BACKUP FOLDERS ? INSERT PATH HERE :
-BACKUP_PATH='/Users/kalhal/Desktop/Testing'
-
-
-#==================================================
-#================== PROGRAM CODE ==================
-#==================================================
-
-#***USEFUL DATA***
+#*************************#
+#****** USEFUL DATA ******#
+#*************************#
 
 EXEC_TIME=$(date "+%H:%M:%S")
 EXEC_DATE=$(date "+%d/%m/%y")
 
-# ***********************
-# ****** FUNCTIONS ******
-# ***********************
+# ***********************#
+# ****** FUNCTIONS ******#
+# ***********************#
 
 function getOS() {
 	case "$OSTYPE" in
@@ -94,26 +81,25 @@ function log() {
 
 function sendStatus() {
 	#***EDIT HERE MESSAGE for E-Mail***	
-	line1=$(echo "Hi there $USERNAME, your datas were successfully saved in $BACKUP_PATH1 !")
-	line2=$(echo "- Backup of $FOLDER_PATH1 => Status code : $1")
-	line3=$(echo "- Backup of $FOLDER_PATH2 => Status code : $2")
+	line1=$(echo "Hi there $USERNAME, your datas were successfully saved in $DEST_PATH !")
+	line2=$(echo "- Backup of $FOLDER_PATH => Status code : $1")
 	bckupTime=$(echo "Execution time : $EXEC_DATE at $EXEC_TIME")
-	errorMsg=$(echo "An error occured with $HOSTNAME ! Couldn't save data in $BACKUP_PATH1 ...")
+	errorMsg=$(echo "An error occured with $HOSTNAME ! Couldn't save data in $DEST_PATH ...")
 
 	#***Send Mail***
 	if [ $1 -eq 0 ] && [ $2 -eq 0 ]
 	then
-		echo -e "${line1}\n\n${line2}\n${line3}\n${backupTime}" | mail -s "Backup successfully Done" $ADMIN_MAIL -c $CC_MAIL
+		echo -e "${line1}\n\n${line2}\n${backupTime}" | mail -s "Backup successfully Done" $ADMIN_MAIL -c $CC_MAIL
 		echo $?
 	else
-		echo -e "${errorMsg}\n\n${line2}\n${line3}\n${backupTime}" | mail -s "Backup Failed !" $ADMIN_MAIL -c $CC_MAIL
+		echo -e "${errorMsg}\n\n${line2}\n${backupTime}" | mail -s "Backup Failed !" $ADMIN_MAIL -c $CC_MAIL
 		echo $?
 	fi	
 }
 
-# ********************************************************
-# ****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******
-# ********************************************************
+#********************************************************#
+#****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******#
+#********************************************************#
 
 #Check source folder and output error if necessary
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
@@ -127,22 +113,22 @@ fi
 done
 
 #Check destination folder
-if ! [ -d $BACKUP_PATH ]
+if ! [ -d $DEST_PATH ]
 then
-	log "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
-	echo -e "[NOT_FOUND] - '$BACKUP_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
+	log "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
+	echo -e "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
 	exit 2	
 fi
 
-# ***************************
-# ****** START BACKUP *******
-# ***************************
+#***************************#
+#****** START BACKUP *******#
+#***************************#
 
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
-	log "[INFO] - Starting backup of '$FOLDER_PATH' in '$BACKUP_PATH'"
+	log "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
 	#Start backup
-	bckup_cmd=$(rsync -arhv $FOLDER_PATH $BACKUP_PATH 2>&1)
+	bckup_cmd=$(rsync -arhv $FOLDER_PATH $DEST_PATH 2>&1)
 	#If it's not a success
 	if [ $? -ne 0 ]
 	then
@@ -150,22 +136,20 @@ do
 		echo -e "An error occured with '$FOLDER_PATH' => $bckup_cmd"
 		exit 127
 	else
-		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$BACKUP_PATH'" "info"
+		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
 		log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
 		echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
 	fi
 done
 
-exit
- 
 #***BACKUP COMMAND FOR PASSWORDS***
 
-# rsync -arhv $FOLDER_PATH1 $BACKUP_PATH1
+# rsync -arhv $FOLDER_PATH1 $DEST_PATH1
 # status[0]=$?
 
 # #***AND VOICE UP FOLDER***
 
-# rsync -arhv $FOLDER_PATH2 $BACKUP_PATH1
+# rsync -arhv $FOLDER_PATH2 $DEST_PATH1
 # status[1]=$?
 
 # sendStatus ${status[0]} ${status[1]}
