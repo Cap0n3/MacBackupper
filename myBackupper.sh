@@ -54,19 +54,19 @@ function log() {
 		local logs_path="$HOME/Library/Logs"
 		local log_folder_name="myBackupper"
 		local full_path="$logs_path/$log_folder_name"
-		local log_format="$EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
+		local log_format="[*] $EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
 		
 		#Create log folder & file if doesn't exit or write 
 		if [ -d $full_path ]
 		then
-			echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
+			echo -e "$log_format $log_message\n" >> $full_path/myMacBackupper.log
 		else
 			mkdir $full_path
 			echo "$log_format Created log folder at '$full_path'" >> $full_path/myMacBackupper.log
 			#Create log folder and write log message
 			if ! [ -z $log_message ]
 			then
-				echo -e "$log_format $log_message" >> $full_path/myMacBackupper.log
+				echo -e "$log_format $log_message\n" >> $full_path/myMacBackupper.log
 			fi
 		fi
 	elif [ $os_type == "linux" ]
@@ -81,7 +81,7 @@ function log() {
 function pingAddress() {
 	#This function pings n times to see if ressource is online
 
-	n_times=$1
+	local n_times=$1
 	
 	for ((i = 0 ; i < $n_times ; i++))
 	do
@@ -161,16 +161,115 @@ do
 	log "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
 	#Start backup
 	bckup_cmd=$(rsync -arhv $FOLDER_PATH $DEST_PATH 2>&1)
+	exit_code=$?
 	#If it's not a success
-	if [ $? -ne 0 ]
+	if [ "$exit_code" -ne 0 ]
 	then
-		log "[ERROR] - An error occured with '$FOLDER_PATH' => $bckup_cmd" "err"
-		echo -e "An error occured with '$FOLDER_PATH' => $bckup_cmd"
-		exit 127
-	else
-		log "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
-		log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
-		echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
+		#Something went wrong
+		echo -e "\n[RSYNC ERROR] - An error occured with rsync during tranfer '$FOLDER_PATH' => EXIT CODE : $exit_code\n. See log for more infos."
+		#Grep error line
+		errMsg=$(echo "$bckup_cmd" | grep rsync:)
+		#Display error for user
+		echo "$errMsg"
+		#Create empty array to store corrupted file links (for report)
+		corr_files=()
+		#Log exact rsync error code for further investigation
+		case "$exit_code" in
+			1)
+				log "[RSYNC ERROR] - Syntax or usage error. (exit code 1)" "err"
+				exit 1
+			;;
+			2)
+				log "[RSYNC ERROR] - Protocol incompatibility. (exit code 2)" "err"
+				exit 1
+			;;
+			3)
+				log "[RSYNC ERROR] - Errors selecting input/output files, dirs. (exit code 3)" "err"
+				exit 1
+			;;
+			4)
+				log "[RSYNC ERROR] - Requested action not supported: an attempt was made to manipulate 64-bit files on a platform that cannot support them; or an option was specified that is supported by the client and not by the server. (exit code 4)" "err"
+				exit 1
+			;;
+			5)
+				log "[RSYNC ERROR] - Error starting client-server protocol. (exit code 5)" "err"
+				exit 1
+			;;
+			6)
+				log "[RSYNC ERROR] - Daemon unable to append to log-file. (exit code 6)" "err"
+				#NO EXIT
+			;;
+			10)
+				log "[RSYNC ERROR] - Error in socket I/O. (exit code 10)" "err"
+				exit 1
+			;;
+			11)
+				log "[RSYNC ERROR] - Error in file I/O. (exit code 11)" "err"
+				exit 1
+			;;
+			12)
+				log "[RSYNC ERROR] - Error in rsync protocol data stream. (exit code 12)" "err"
+				exit 1
+			;;
+			13)
+				log "[RSYNC ERROR] - Errors with program diagnostics. (exit code 13)" "err"
+				#NO EXIT
+			;;
+			14)
+				log "[RSYNC ERROR] - Error in IPC code. (exit code 14)" "err"
+				exit 1
+			;;
+			20)
+				log "[RSYNC ERROR] - Received SIGUSR1 or SIGINT. (exit code 20)" "err"
+				#NO EXIT
+			;;
+			21)
+				log "[RSYNC ERROR] - Some error returned by waitpid(). (exit code 21)" "err"
+				#NO EXIT
+			;;
+			22)
+				log "[RSYNC ERROR] - Error allocating core memory buffers. (exit code 22)" "err"
+				exit 1
+			;;
+			23)
+				log "[RSYNC ERROR] - Partial transfer due to error. (exit code 23) =>\n[ERROR MSG] - $errMsg" "err"
+				#Store corrupted file paths for listing
+				corr_file_path=$(echo "$errMsg" | awk -F '"|"' '{print $2}')
+				corr_files+=($corr_file_path)
+				#NO EXIT
+			;;
+			24)
+				log "[RSYNC ERROR] - Partial transfer due to vanished source files. (exit code 24)" "err"
+				#NO EXIT
+			;;
+			25)
+				log "[RSYNC ERROR] - The --max-delete limit stopped deletions. (exit code 25)" "err"
+				#NO EXIT
+			;;
+			30)
+				log "[RSYNC ERROR] - Timeout in data send/receive. (exit code 30)" "err"
+				exit 1
+			;;
+			35)
+				log "[RSYNC ERROR] - Timeout waiting for daemon connection. (exit code 35)" "err"
+				exit 1
+			;;
+			127)
+				log "[RSYNC ERROR] - Rsync is not installed on your system ! Please install it before running the script (exit code 127)" "err"
+				exit 1
+			;;
+		esac
 	fi
+
+	log "[DONE] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
+	log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
+	echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
+
+	#[!!!] HERE !!! => IMPLEMENT BETTER LISTING of corrupted file paths (In logs as well)
+
+	for allpaths in "${corr_files[@]}"
+	do
+	    echo $allpaths
+	done
 done
 
