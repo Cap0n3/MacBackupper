@@ -44,8 +44,8 @@ function getOS() {
 }
 
 function log() {
-	#Custom logging system for MAC because built in loggin is just weird ...  
-	#Standard log files destination for Apps
+	#Custom logging system for MAC & Linux
+	#On mac check console utility at ~/Library/Logs/<app_name>
 	local log_message=$1
 	local severity=$2
 	local os_type=$(getOS)
@@ -79,6 +79,33 @@ function log() {
 	fi
 }
 
+function pingAddress() {
+	#This function pings n times to see if ressource is online
+
+	n_times=$1
+	
+	for ((i = 0 ; i < $n_times ; i++))
+	do
+		PING_CMD=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
+		PACKET_LOSS=$(echo "$PING_CMD" | grep % | awk '{print $7}')
+
+		if [ $PACKET_LOSS == "0.0%" ]
+		then
+			log "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
+			echo -e "[HOST_UP] - '$NAS_ADDRESS' is up !"
+			break
+		elif [ $PACKET_LOSS == "100.0%" ]
+		then
+			log "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !" "warn"
+			echo -e "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !"
+		else
+			log "[ERROR] - $PING_CMD" "err"
+			echo -e "[ERROR] - $PING_CMD"
+			exit 1
+		fi
+	done
+}
+
 function sendStatus() {
 	#***EDIT HERE MESSAGE for E-Mail***	
 	line1=$(echo "Hi there $USERNAME, your datas were successfully saved in $DEST_PATH !")
@@ -101,7 +128,7 @@ function sendStatus() {
 #****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******#
 #********************************************************#
 
-#Check source folder and output error if necessary
+#Check of source folders exists or are accessible (exit & output error if necessary)
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
 	if ! [ -d $FOLDER_PATH ]
@@ -112,7 +139,13 @@ do
 fi
 done
 
-#Check destination folder
+#If NAS option is active, check if ressource is available online (10 times and then give up)
+if [ $NAS_BACKUP == true ]
+then
+	pingAddress 10
+fi
+
+#Check if destination folder exists or is accessible (output error if necessary)
 if ! [ -d $DEST_PATH ]
 then
 	log "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
