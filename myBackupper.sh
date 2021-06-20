@@ -40,7 +40,6 @@ function getOS() {
 			echo $os_name
 		;;
 	esac
-
 }
 
 function log() {
@@ -53,7 +52,7 @@ function log() {
 	if [ $os_type == "macOs" ]
 	then
 		local logs_path="$HOME/Library/Logs"
-		local log_folder_name="myMacBackupper"
+		local log_folder_name="myBackupper"
 		local full_path="$logs_path/$log_folder_name"
 		local log_format="$EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
 		
@@ -175,14 +174,3 @@ do
 	fi
 done
 
-#***BACKUP COMMAND FOR PASSWORDS***
-
-# rsync -arhv $FOLDER_PATH1 $DEST_PATH1
-# status[0]=$?
-
-# #***AND VOICE UP FOLDER***
-
-# rsync -arhv $FOLDER_PATH2 $DEST_PATH1
-# status[1]=$?
-
-# sendStatus ${status[0]} ${status[1]}
