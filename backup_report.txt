@@ -1,0 +1,41 @@
+#================================================================#
+#======================== BACKUP REPORT =========================#
+#================================================================#
+
+
+EXCUTION DATE & TIME :
+--------------------
+
+- 21/06/21 at 09:51:27
+
+SOURCE FOLDER(S) :
+----------------
+
+- /Users/AlPhysiKal/4_MGR/1_COURS/11_Songs/TeÃÅleÃÅphone/ 
+- /Users/kalhal/Documents/Notes_Network 
+- 
+- 
+
+DESTINATION FOLDER :
+------------------
+
+- /Volumes/HomeNAS-2/1_ALEX/1_MACBOOK_PRO_NAS_BCKUP
+
+RSYNC OUTPUT :
+------------
+
+building file list ... done
+Notes_Network/
+Notes_Network/3wayHandshake/
+
+sent 371 bytes  received 74 bytes  890.00 bytes/sec
+total size is 187.22K  speedup is 420.71
+
+ERRORS :
+------
+
+[!] Total file errors : 2
+[!] Problematic files :
+
+- /Users/AlPhysiKal/4_MGR/1_COURS/11_Songs/TeÃ\#201leÃ\#201phone/Telephone_Cendrillon(Playback_Personnalise).mp3
+- /Users/AlPhysiKal/4_MGR/1_COURS/11_Songs/TeÃ\#201leÃ\#201phone/myFile.txt

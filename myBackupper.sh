@@ -10,6 +10,7 @@ source myBackupper.config
 #****** USEFUL DATA ******#
 #*************************#
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXEC_TIME=$(date "+%H:%M:%S")
 EXEC_DATE=$(date "+%d/%m/%y")
 
@@ -266,10 +267,33 @@ do
 	echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
 
 	#[!!!] HERE !!! => IMPLEMENT BETTER LISTING of corrupted file paths (In logs as well)
+	
+	#*************************************#
+	#****** BACKUP REPORT FOR USER *******#
+	#*************************************#
 
-	for allpaths in "${corr_files[@]}"
+	echo -e "#================================================================#" > "$DIR/backup_report.txt"
+	echo -e "#======================== BACKUP REPORT =========================#" >> "$DIR/backup_report.txt"
+	echo -e "#================================================================#\n\n" >> "$DIR/backup_report.txt"
+	echo -e "EXCUTION DATE & TIME :" >> "$DIR/backup_report.txt"
+	echo -e "--------------------\n" >> "$DIR/backup_report.txt"
+	echo -e "- $EXEC_DATE at $EXEC_TIME" >> "$DIR/backup_report.txt"
+	echo -e "\nSOURCE FOLDER(S) :" >> "$DIR/backup_report.txt"
+	echo -e "----------------\n" >> "$DIR/backup_report.txt"
+	for src_folders in "${FOLDER_PATHS[@]}";do echo -e "- $src_folders" >> "$DIR/backup_report.txt";done
+	echo -e "\nDESTINATION FOLDER :" >> "$DIR/backup_report.txt"
+	echo -e "------------------\n" >> "$DIR/backup_report.txt"
+	echo -e "- $DEST_PATH" >> "$DIR/backup_report.txt"
+	echo -e "\nRSYNC OUTPUT :" >> "$DIR/backup_report.txt"
+	echo -e "------------\n" >> "$DIR/backup_report.txt"
+	echo -e "$bckup_cmd" >> "$DIR/backup_report.txt"
+	echo -e "\nERRORS :" >> "$DIR/backup_report.txt"
+	echo -e "------\n" >> "$DIR/backup_report.txt"
+	echo -e "[!] Total file errors : ${#corr_files[@]}" >> "$DIR/backup_report.txt"
+	echo -e "[!] Problematic files :\n" >> "$DIR/backup_report.txt"
+	for corr_file_path in "${corr_files[@]}"
 	do
-	    echo $allpaths
+	    echo -e "- $corr_file_path" >> "$DIR/backup_report.txt"
 	done
 done
 
