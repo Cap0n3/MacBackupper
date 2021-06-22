@@ -6,56 +6,96 @@ source myBackupper.config
 #================== MY BACKUPPER ==================#
 #==================================================#
 
-#*************************#
-#****** USEFUL DATA ******#
-#*************************#
+# TO DO :
+# - IMPLEMENT BETTER LISTING of corrupted file paths (In Logs as well)
+# - Improve scirpt stdout
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXEC_TIME=$(date "+%H:%M:%S")
 EXEC_DATE=$(date "+%d/%m/%y")
 
-# ***********************#
-# ****** FUNCTIONS ******#
-# ***********************#
+#\\=============================================================#
+#\\ FUNCTIONS 
+#\\=============================================================#
+
+#############################################
+# NAME : getOS()
+# Get OS name (used by log() to decide 
+# how to log messages depending if MAC/LINUX)
+# Globals:
+#   OSTYPE
+# Arguments:
+#   None
+# Output:
+# 	Assigned to a var in log()
+#############################################
 
 function getOS() {
+
+	local os_name
+
 	case "$OSTYPE" in
 		solaris*)
-			local os_name="solaris"
+			os_name="solaris"
 			echo $os_name
 		;;
 		darwin*)
-			local os_name="macOs"
+			os_name="macOs"
 			echo $os_name
 		;;
 		linux*)
-			local os_name="linux"
+			os_name="linux"
 			echo $os_name
 		;;
 		bsd*)
-			local os_name="bsd"
+			os_name="bsd"
 			echo $os_name
 		;;
 		msys*)
-			local os_name="windows"
+			os_name="windows"
 			echo $os_name
 		;;
 	esac
 }
 
-function log() {
+###############################################
+# NAME : writeLog()
+# Custom logging system for MAC & standard
+# Linux 'logger' cmd for Linux.
+# Globals:
+#   EXEC_DATE 
+#	EXEC_TIME 
+#	HOSTNAME 
+#	USER
+# Arguments:
+#   Log Message, log severity level
+# Output:
+# 	to Console utility (mac), to logger (linux)
+###############################################
+
+function writeLog() {
 	#Custom logging system for MAC & Linux
 	#On mac check console utility at ~/Library/Logs/<app_name>
-	local log_message=$1
-	local severity=$2
-	local os_type=$(getOS)
+
+	local log_message
+	local severity
+	local os_type
+
+	log_message=$1
+	severity=$2
+	os_type=$(getOS)
 
 	if [ $os_type == "macOs" ]
 	then
-		local logs_path="$HOME/Library/Logs"
-		local log_folder_name="myBackupper"
-		local full_path="$logs_path/$log_folder_name"
-		local log_format="[*] $EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
+		local logs_path
+		local log_folder_name
+		local full_path
+		local log_format
+
+		logs_path="$HOME/Library/Logs"
+		log_folder_name="myBackupper"
+		full_path="$logs_path/$log_folder_name"
+		log_format="[*] $EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
 		
 		#Create log folder & file if doesn't exit or write 
 		if [ -d $full_path ]
@@ -79,32 +119,66 @@ function log() {
 	fi
 }
 
+###############################################
+# NAME : pingAddress
+# This function pings n times to see 
+# if ressource is online.
+# Globals:
+#   NAS_ADDRESS
+# Arguments:
+#   n_times (ping n times)
+# Output:
+#	to stdout
+# 	to Console utility (mac), to logger (linux)
+###############################################
+
 function pingAddress() {
 	#This function pings n times to see if ressource is online
 
-	local n_times=$1
+	local n_times
+
+	n_times=$1
 	
 	for ((i = 0 ; i < $n_times ; i++))
 	do
-		PING_CMD=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
-		PACKET_LOSS=$(echo "$PING_CMD" | grep % | awk '{print $7}')
+		local ping_cmd
+		local packet_loss
 
-		if [ $PACKET_LOSS == "0.0%" ]
+		local ping_cmd=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
+		local packet_loss=$(echo "$ping_cmd" | grep % | awk '{print $7}')
+
+		if [ $packet_loss == "0.0%" ]
 		then
-			log "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
+			writeLog "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
 			echo -e "[HOST_UP] - '$NAS_ADDRESS' is up !"
 			break
-		elif [ $PACKET_LOSS == "100.0%" ]
+		elif [ $packet_loss == "100.0%" ]
 		then
-			log "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !" "warn"
+			writeLog "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !" "warn"
 			echo -e "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !"
 		else
-			log "[ERROR] - $PING_CMD" "err"
-			echo -e "[ERROR] - $PING_CMD"
+			writeLog "[ERROR] - $ping_cmd" "err"
+			echo -e "[ERROR] - $ping_cmd"
 			exit 1
 		fi
 	done
 }
+
+#############################################
+# NAME : sendStatus()
+# TO DO !!!
+# Send mail if success/failure if user wants
+# Globals:
+#   USERNAME
+#	HOSTNAME
+#	EXEC_DATE
+#	EXEC_TIME
+#	DEST_PATH
+# Arguments:
+#   Status message
+# Output:
+# 	To mail
+#############################################
 
 function sendStatus() {
 	#***EDIT HERE MESSAGE for E-Mail***	
@@ -124,16 +198,16 @@ function sendStatus() {
 	fi	
 }
 
-#********************************************************#
-#****** CHECK IF SOURCE & DESTINATION FOLDER EXIST ******#
-#********************************************************#
+#\\=============================================================#
+#\\ VERIFICATIONS (check if source/destination exist & accessible)
+#\\=============================================================#
 
 #Check of source folders exists or are accessible (exit & output error if necessary)
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
 	if ! [ -d $FOLDER_PATH ]
 	then
-		log "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
+		writeLog "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
 		echo -e "[ACCESS_DENIED] - '$FOLDER_PATH' source folder doesn't exist or is not accessible ! Script exited with status 2 !"
 		exit 2		
 fi
@@ -148,18 +222,18 @@ fi
 #Check if destination folder exists or is accessible (output error if necessary)
 if ! [ -d $DEST_PATH ]
 then
-	log "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
+	writeLog "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !" "err"
 	echo -e "[NOT_FOUND] - '$DEST_PATH' destination folder doesn't exist or is not accessible ! Script exited with status 2 !"
 	exit 2	
 fi
 
-#***************************#
-#****** START BACKUP *******#
-#***************************#
+#\\=============================================================#
+#\\ START ACTUAL BACKUP
+#\\=============================================================#
 
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
-	log "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
+	writeLog "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
 	#Start backup
 	bckup_cmd=$(rsync -arhv $FOLDER_PATH $DEST_PATH 2>&1)
 	exit_code=$?
@@ -177,96 +251,96 @@ do
 		#Log exact rsync error code for further investigation
 		case "$exit_code" in
 			1)
-				log "[RSYNC ERROR] - Syntax or usage error. (exit code 1)" "err"
+				writeLog "[RSYNC ERROR] - Syntax or usage error. (exit code 1)" "err"
 				exit 1
 			;;
 			2)
-				log "[RSYNC ERROR] - Protocol incompatibility. (exit code 2)" "err"
+				writeLog "[RSYNC ERROR] - Protocol incompatibility. (exit code 2)" "err"
 				exit 1
 			;;
 			3)
-				log "[RSYNC ERROR] - Errors selecting input/output files, dirs. (exit code 3)" "err"
+				writeLog "[RSYNC ERROR] - Errors selecting input/output files, dirs. (exit code 3)" "err"
 				exit 1
 			;;
 			4)
-				log "[RSYNC ERROR] - Requested action not supported: an attempt was made to manipulate 64-bit files on a platform that cannot support them; or an option was specified that is supported by the client and not by the server. (exit code 4)" "err"
+				writeLog "[RSYNC ERROR] - Requested action not supported: an attempt was made to manipulate 64-bit files on a platform that cannot support them; or an option was specified that is supported by the client and not by the server. (exit code 4)" "err"
 				exit 1
 			;;
 			5)
-				log "[RSYNC ERROR] - Error starting client-server protocol. (exit code 5)" "err"
+				writeLog "[RSYNC ERROR] - Error starting client-server protocol. (exit code 5)" "err"
 				exit 1
 			;;
 			6)
-				log "[RSYNC ERROR] - Daemon unable to append to log-file. (exit code 6)" "err"
+				writeLog "[RSYNC ERROR] - Daemon unable to append to writeLog-file. (exit code 6)" "err"
 				#NO EXIT
 			;;
 			10)
-				log "[RSYNC ERROR] - Error in socket I/O. (exit code 10)" "err"
+				writeLog "[RSYNC ERROR] - Error in socket I/O. (exit code 10)" "err"
 				exit 1
 			;;
 			11)
-				log "[RSYNC ERROR] - Error in file I/O. (exit code 11)" "err"
+				writeLog "[RSYNC ERROR] - Error in file I/O. (exit code 11)" "err"
 				exit 1
 			;;
 			12)
-				log "[RSYNC ERROR] - Error in rsync protocol data stream. (exit code 12)" "err"
+				writeLog "[RSYNC ERROR] - Error in rsync protocol data stream. (exit code 12)" "err"
 				exit 1
 			;;
 			13)
-				log "[RSYNC ERROR] - Errors with program diagnostics. (exit code 13)" "err"
+				writeLog "[RSYNC ERROR] - Errors with program diagnostics. (exit code 13)" "err"
 				#NO EXIT
 			;;
 			14)
-				log "[RSYNC ERROR] - Error in IPC code. (exit code 14)" "err"
+				writeLog "[RSYNC ERROR] - Error in IPC code. (exit code 14)" "err"
 				exit 1
 			;;
 			20)
-				log "[RSYNC ERROR] - Received SIGUSR1 or SIGINT. (exit code 20)" "err"
+				writeLog "[RSYNC ERROR] - Received SIGUSR1 or SIGINT. (exit code 20)" "err"
 				#NO EXIT
 			;;
 			21)
-				log "[RSYNC ERROR] - Some error returned by waitpid(). (exit code 21)" "err"
+				writeLog "[RSYNC ERROR] - Some error returned by waitpid(). (exit code 21)" "err"
 				#NO EXIT
 			;;
 			22)
-				log "[RSYNC ERROR] - Error allocating core memory buffers. (exit code 22)" "err"
+				writeLog "[RSYNC ERROR] - Error allocating core memory buffers. (exit code 22)" "err"
 				exit 1
 			;;
 			23)
-				log "[RSYNC ERROR] - Partial transfer due to error. (exit code 23) =>\n[ERROR MSG] - $errMsg" "err"
+				writeLog "[RSYNC ERROR] - Partial transfer due to error. (exit code 23) =>\n[ERROR MSG] - $errMsg" "err"
 				#Store corrupted file paths for listing
 				corr_file_path=$(echo "$errMsg" | awk -F '"|"' '{print $2}')
 				corr_files+=($corr_file_path)
 				#NO EXIT
 			;;
 			24)
-				log "[RSYNC ERROR] - Partial transfer due to vanished source files. (exit code 24)" "err"
+				writeLog "[RSYNC ERROR] - Partial transfer due to vanished source files. (exit code 24)" "err"
 				#NO EXIT
 			;;
 			25)
-				log "[RSYNC ERROR] - The --max-delete limit stopped deletions. (exit code 25)" "err"
+				writeLog "[RSYNC ERROR] - The --max-delete limit stopped deletions. (exit code 25)" "err"
 				#NO EXIT
 			;;
 			30)
-				log "[RSYNC ERROR] - Timeout in data send/receive. (exit code 30)" "err"
+				writeLog "[RSYNC ERROR] - Timeout in data send/receive. (exit code 30)" "err"
 				exit 1
 			;;
 			35)
-				log "[RSYNC ERROR] - Timeout waiting for daemon connection. (exit code 35)" "err"
+				writeLog "[RSYNC ERROR] - Timeout waiting for daemon connection. (exit code 35)" "err"
 				exit 1
 			;;
 			127)
-				log "[RSYNC ERROR] - Rsync is not installed on your system ! Please install it before running the script (exit code 127)" "err"
+				writeLog "[RSYNC ERROR] - Rsync is not installed on your system ! Please install it before running the script (exit code 127)" "err"
 				exit 1
 			;;
 		esac
 	fi
 
-	log "[DONE] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
-	log "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
+	writeLog "[DONE] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
+	writeLog "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
 	echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
 
-	#[!!!] HERE !!! => IMPLEMENT BETTER LISTING of corrupted file paths (In logs as well)
+	#[!!!] HERE !!! => IMPLEMENT BETTER LISTING of corrupted file paths (In Logs as well)
 	
 	#*************************************#
 	#****** BACKUP REPORT FOR USER *******#
