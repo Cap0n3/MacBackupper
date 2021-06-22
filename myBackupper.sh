@@ -70,32 +70,24 @@ function getOS() {
 # Arguments:
 #   Log Message, log severity level
 # Output:
-# 	to Console utility (mac), to logger (linux)
+# 	to Console utility (mac) ~/Library/Logs/<app_name>, 
+# 	to logger command for linux
 ###############################################
 
 function writeLog() {
-	#Custom logging system for MAC & Linux
-	#On mac check console utility at ~/Library/Logs/<app_name>
-
-	local log_message
-	local severity
+	
+	local log_message=$1
+	local severity=$2
+	#Must separate declaration from assignation for local var commands
 	local os_type
-
-	log_message=$1
-	severity=$2
 	os_type=$(getOS)
 
 	if [ $os_type == "macOs" ]
 	then
-		local logs_path
-		local log_folder_name
-		local full_path
-		local log_format
-
-		logs_path="$HOME/Library/Logs"
-		log_folder_name="myBackupper"
-		full_path="$logs_path/$log_folder_name"
-		log_format="[*] $EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
+		local logs_path="$HOME/Library/Logs"
+		local log_folder_name="myBackupper"
+		local full_path="$logs_path/$log_folder_name"
+		local log_format="[*] $EXEC_DATE $EXEC_TIME $HOSTNAME $USER:"
 		
 		#Create log folder & file if doesn't exit or write 
 		if [ -d $full_path ]
@@ -133,20 +125,18 @@ function writeLog() {
 ###############################################
 
 function pingAddress() {
-	#This function pings n times to see if ressource is online
-
-	local n_times
-
-	n_times=$1
+	
+	local n_times=$1
 	
 	for ((i = 0 ; i < $n_times ; i++))
 	do
+		#Must separate declaration from assignation for local var commands
 		local ping_cmd
+		ping_cmd=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
+
 		local packet_loss
-
-		local ping_cmd=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
-		local packet_loss=$(echo "$ping_cmd" | grep % | awk '{print $7}')
-
+		packet_loss=$(echo "$ping_cmd" | grep % | awk '{print $7}')
+		
 		if [ $packet_loss == "0.0%" ]
 		then
 			writeLog "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
