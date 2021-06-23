@@ -6,10 +6,6 @@ source myBackupper.config
 #================== MY BACKUPPER ==================#
 #==================================================#
 
-# TO DO :
-# - IMPLEMENT BETTER LISTING of corrupted file paths (In Logs as well)
-# - Improve scirpt stdout
-
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXEC_TIME=$(date "+%H:%M:%S")
 EXEC_DATE=$(date "+%d/%m/%y")
@@ -140,15 +136,15 @@ function pingAddress() {
 		if [ $packet_loss == "0.0%" ]
 		then
 			writeLog "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
-			echo -e "[HOST_UP] - '$NAS_ADDRESS' is up !"
+			echo -e "\n[HOST_UP] - '$NAS_ADDRESS' is up !"
 			break
 		elif [ $packet_loss == "100.0%" ]
 		then
 			writeLog "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !" "warn"
-			echo -e "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !"
+			echo -e "\n[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !"
 		else
 			writeLog "[ERROR] - $ping_cmd" "err"
-			echo -e "[ERROR] - $ping_cmd"
+			echo -e "n\[ERROR] - $ping_cmd"
 			exit 1
 		fi
 	done
@@ -231,11 +227,9 @@ do
 	if [ "$exit_code" -ne 0 ]
 	then
 		#Something went wrong
-		echo -e "\n[RSYNC ERROR] - An error occured with rsync during tranfer '$FOLDER_PATH' => EXIT CODE : $exit_code\n. See log for more infos."
+		# echo -e "\n[RSYNC ERROR] - An error occured with rsync during tranfer '$FOLDER_PATH' => EXIT CODE : $exit_code\n. See log for more infos."
 		#Grep error line
 		errMsg=$(echo "$bckup_cmd" | grep rsync:)
-		#Display error for user
-		echo "$errMsg"
 		#Create empty array to store corrupted file links (for report)
 		corr_files=()
 		#Log exact rsync error code for further investigation
@@ -324,40 +318,45 @@ do
 				exit 1
 			;;
 		esac
-	fi
 
-	writeLog "[DONE] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info"
-	writeLog "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC => $FOLDER_PATH\n\n$bckup_cmd\n==================================\n" "info"
-	echo -e "\n\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n==================================\n"
-
-	#[!!!] HERE !!! => IMPLEMENT BETTER LISTING of corrupted file paths (In Logs as well)
+		#Only partial success because some non 'fatal' error were encoutered.
+		writeLog "[PARTIAL SUCCESS] - '$FOLDER_PATH' partially saved in '$DEST_PATH'. Some errors were encountered." "info"
+		echo -e "\n\n[PARTIAL SUCCESS] - '$FOLDER_PATH' partially saved in '$DEST_PATH'. Some errors were encountered, see log or report for more infos."
 	
-	#*************************************#
-	#****** BACKUP REPORT FOR USER *******#
-	#*************************************#
+	else
+		writeLog "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info. No error was encountered !" "info"
+		echo -e "\n\n[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info. No error was encountered !"
+	fi
+	
+	#ECHO message for user
+	echo -e "\n======== BCKUP_OUTPUT_INFO =======\n==================================\nSRC =>$FOLDER_PATH\n\n$bckup_cmd\n=================================="
+done
 
-	echo -e "#================================================================#" > "$DIR/backup_report.txt"
-	echo -e "#======================== BACKUP REPORT =========================#" >> "$DIR/backup_report.txt"
-	echo -e "#================================================================#\n\n" >> "$DIR/backup_report.txt"
-	echo -e "EXCUTION DATE & TIME :" >> "$DIR/backup_report.txt"
-	echo -e "--------------------\n" >> "$DIR/backup_report.txt"
-	echo -e "- $EXEC_DATE at $EXEC_TIME" >> "$DIR/backup_report.txt"
-	echo -e "\nSOURCE FOLDER(S) :" >> "$DIR/backup_report.txt"
-	echo -e "----------------\n" >> "$DIR/backup_report.txt"
-	for src_folders in "${FOLDER_PATHS[@]}";do echo -e "- $src_folders" >> "$DIR/backup_report.txt";done
-	echo -e "\nDESTINATION FOLDER :" >> "$DIR/backup_report.txt"
-	echo -e "------------------\n" >> "$DIR/backup_report.txt"
-	echo -e "- $DEST_PATH" >> "$DIR/backup_report.txt"
-	echo -e "\nRSYNC OUTPUT :" >> "$DIR/backup_report.txt"
-	echo -e "------------\n" >> "$DIR/backup_report.txt"
-	echo -e "$bckup_cmd" >> "$DIR/backup_report.txt"
-	echo -e "\nERRORS :" >> "$DIR/backup_report.txt"
-	echo -e "------\n" >> "$DIR/backup_report.txt"
-	echo -e "[!] Total file errors : ${#corr_files[@]}" >> "$DIR/backup_report.txt"
-	echo -e "[!] Problematic files :\n" >> "$DIR/backup_report.txt"
-	for corr_file_path in "${corr_files[@]}"
-	do
-	    echo -e "- $corr_file_path" >> "$DIR/backup_report.txt"
-	done
+#\\=============================================================#
+#\\ BACKUP REPORT FOR USER
+#\\=============================================================#
+
+echo -e "#================================================================#" > "$DIR/backup_report.txt"
+echo -e "#======================== BACKUP REPORT =========================#" >> "$DIR/backup_report.txt"
+echo -e "#================================================================#\n\n" >> "$DIR/backup_report.txt"
+echo -e "EXCUTION DATE & TIME :" >> "$DIR/backup_report.txt"
+echo -e "--------------------\n" >> "$DIR/backup_report.txt"
+echo -e "- $EXEC_DATE at $EXEC_TIME" >> "$DIR/backup_report.txt"
+echo -e "\nSOURCE FOLDER(S) :" >> "$DIR/backup_report.txt"
+echo -e "----------------\n" >> "$DIR/backup_report.txt"
+for src_folders in "${FOLDER_PATHS[@]}";do echo -e "- $src_folders" >> "$DIR/backup_report.txt";done
+echo -e "\nDESTINATION FOLDER :" >> "$DIR/backup_report.txt"
+echo -e "------------------\n" >> "$DIR/backup_report.txt"
+echo -e "- $DEST_PATH" >> "$DIR/backup_report.txt"
+# echo -e "\nRSYNC OUTPUT :" >> "$DIR/backup_report.txt"
+# echo -e "------------\n" >> "$DIR/backup_report.txt"
+# echo -e "$bckup_cmd" >> "$DIR/backup_report.txt"
+echo -e "\nERRORS :" >> "$DIR/backup_report.txt"
+echo -e "------\n" >> "$DIR/backup_report.txt"
+echo -e "[!] Total file errors : ${#corr_files[@]}" >> "$DIR/backup_report.txt"
+echo -e "[!] Problematic files :\n" >> "$DIR/backup_report.txt"
+for corr_file_path in "${corr_files[@]}"
+do
+    echo -e "- $corr_file_path" >> "$DIR/backup_report.txt"
 done
 
