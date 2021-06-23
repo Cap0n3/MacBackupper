@@ -226,9 +226,7 @@ do
 	#If it's not a success
 	if [ "$exit_code" -ne 0 ]
 	then
-		#Something went wrong
-		# echo -e "\n[RSYNC ERROR] - An error occured with rsync during tranfer '$FOLDER_PATH' => EXIT CODE : $exit_code\n. See log for more infos."
-		#Grep error line
+		#Something went wrong - Grep error line
 		errMsg=$(echo "$bckup_cmd" | grep rsync:)
 		#Create empty array to store corrupted file links (for report)
 		corr_files=()
@@ -319,7 +317,7 @@ do
 			;;
 		esac
 
-		#Only partial success because some non 'fatal' error were encoutered.
+		#Only partial success because some non 'fatal' errors were encoutered.
 		writeLog "[PARTIAL SUCCESS] - '$FOLDER_PATH' partially saved in '$DEST_PATH'. Some errors were encountered." "info"
 		echo -e "\n\n[PARTIAL SUCCESS] - '$FOLDER_PATH' partially saved in '$DEST_PATH'. Some errors were encountered, see log or report for more infos."
 	
