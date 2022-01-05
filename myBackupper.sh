@@ -100,7 +100,7 @@ function writeLog() {
 		fi
 	elif [ $os_type == "linux" ]
 	then
-		logger -p local7.$severity -t myBackupper $log_message
+		logger -p local7.$severity -t myBackupper "$log_message"
 	else
 		echo -e "\nThis script is not compatible with your system type ('$os_type') ! Works only on MacOS and Linux.\n"
 		exit 2
@@ -130,21 +130,23 @@ function pingAddress() {
 		local ping_cmd
 		ping_cmd=$(ping -q -c 1 -W 1000 $NAS_ADDRESS 2>&1)
 
+		# HERE !!! May be awk '{print $7}' instead for MacOS ... to check !!!
 		local packet_loss
-		packet_loss=$(echo "$ping_cmd" | grep % | awk '{print $7}')
+		packet_loss=$(echo "$ping_cmd" | grep % | awk '{print $6}')
 		
-		if [ $packet_loss == "0.0%" ]
+		# HERE !!! May be 0.0% and 100.0% instead for MacOS ... to check !!!
+		if [ $packet_loss == "0%" ]
 		then
 			writeLog "[HOST_UP] - '$NAS_ADDRESS' is up !" "info"
 			echo -e "\n[HOST_UP] - '$NAS_ADDRESS' is up !"
 			break
-		elif [ $packet_loss == "100.0%" ]
+		elif [ $packet_loss == "100%" ]
 		then
 			writeLog "[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !" "warn"
 			echo -e "\n[HOST_DOWN] - '$NAS_ADDRESS' seems down ... try again !"
 		else
 			writeLog "[ERROR] - $ping_cmd" "err"
-			echo -e "n\[ERROR] - $ping_cmd"
+			echo -e "\n[ERROR] - $ping_cmd"
 			exit 1
 		fi
 	done
