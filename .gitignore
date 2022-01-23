@@ -1,4 +1,18 @@
+# == MAC OS FILES == #
 .DS_Store
+
+# testing
+/coverage
+
+# production
+/build
+
+# == VISUAL CODE FILES == #
+**/.vscode/
+*.code-workspace
+.history
+
+# == APP DEBUG FILES == #
 testing.sh
 testing2.sh
 backup_report.txt

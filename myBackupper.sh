@@ -221,7 +221,7 @@ fi
 
 for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
-	writeLog "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
+	writeLog "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'" "info"
 	#Start backup
 	bckup_cmd=$(rsync -arhv $FOLDER_PATH $DEST_PATH 2>&1)
 	exit_code=$?
@@ -324,8 +324,8 @@ do
 		echo -e "\n\n[PARTIAL SUCCESS] - '$FOLDER_PATH' partially saved in '$DEST_PATH'. Some errors were encountered, see log or report for more infos."
 	
 	else
-		writeLog "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info. No error was encountered !" "info"
-		echo -e "\n\n[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'" "info. No error was encountered !"
+		writeLog "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'. No error was encountered !" "info"
+		echo -e "\n\n[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'. No error was encountered !"
 	fi
 	
 	#ECHO message for user
@@ -359,4 +359,3 @@ for corr_file_path in "${corr_files[@]}"
 do
     echo -e "- $corr_file_path" >> "$DIR/backup_report.txt"
 done
-
