@@ -224,13 +224,17 @@ for FOLDER_PATH in ${FOLDER_PATHS[@]}
 do
 	writeLog "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'" "info"
 	echo -e "${CYAN}[INFO]${RESET} Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
-	#Start backup
-	rsync -arh $FOLDER_PATH $DEST_PATH --info=progress2
+	# Start backup
+	rsync -arh $FOLDER_PATH $DEST_PATH --info=progress2 | tee /dev/tty
+	# Get Exit code of command
 	exit_code=$?
-	
+
 	#If it's not a success
 	if [ "$exit_code" -ne 0 ]
 	then
+		#Something went wrong - Grep error line ==> TO RE-THINK !!!
+		# errMsg=$(echo "$bckup_cmd" | grep rsync:)
+		
 		#Create empty array to store corrupted file links (for report)
 		corr_files=()
 		#Log exact rsync error code for further investigation
