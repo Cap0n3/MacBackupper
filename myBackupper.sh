@@ -226,22 +226,11 @@ do
 	writeLog "[INFO] - Starting backup of '$FOLDER_PATH' in '$DEST_PATH'" "info"
 	echo -e "${CYAN}[INFO]${RESET} Starting backup of '$FOLDER_PATH' in '$DEST_PATH'"
 	# Start backup
-	bckup_cmd=$((rsync -arh $FOLDER_PATH $DEST_PATH --info=progress2 --dry-run && echo "SUCCESS" || checkErrors $? $FOLDER_PATH  $DEST_PATH) | tee /dev/tty)
+	bckup_cmd=$((rsync -arh $FOLDER_PATH $DEST_PATH --info=progress2 && success $? $FOLDER_PATH  $DEST_PATH || error $? $FOLDER_PATH  $DEST_PATH) | tee /dev/tty)
 	
-	#If it's not a success
-	# if [ "$exit_code" -ne 0 ]
-	# then
-	# 	#Something went wrong - Grep error line ==> TO RE-THINK !!!
-	# 	# errMsg=$(echo "$bckup_cmd" | grep rsync:)
-		
-	# 	#Create empty array to store corrupted file links (for report)
-	# 	#corr_files=()
-	# 	#Log exact rsync error code for further investigation
-			
-	# else
-	# 	writeLog "[SUCCESS] - '$FOLDER_PATH' successfully saved in '$DEST_PATH'. No error was encountered !" "info"
-	# 	echo -e "${GREEN}[SUCCESS]${RESET} '$FOLDER_PATH' successfully saved in '$DEST_PATH'. No error was encountered !"
-	# fi
+	# Something went wrong - Grep error line ==> TO RE-THINK !!!
+	# errMsg=$(echo "$bckup_cmd" | grep rsync:)
+	
 done
 
 #\\=============================================================#

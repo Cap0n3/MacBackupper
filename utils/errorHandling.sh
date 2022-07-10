@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #####################################################
-# NAME : checkErrors()
+# NAME : error()
 # Handle rsync errors based on command exit code
 # Globals:
 #   None
@@ -10,12 +10,11 @@
 # Output:
 # 	Standard output and logs
 ######################################################
-
-function checkErrors {
+function error {
     # Get exit status
     local exit_code=$1
     local source_path=$2
-    local dest_folder=$3
+    local dest_path=$3
     
     # Get exact error & echo + log it
     if [ "$exit_code" -ne 0 ]
@@ -124,12 +123,27 @@ function checkErrors {
 				echo -e "${RED}[RSYNC ERROR]${RESET} Rsync is not installed on your system ! Please install it before running the script (exit code 127)"
 				exit 1
 			;;
-		esac
+		esac        
+    fi
+}
 
-        #Only partial success because some non 'fatal' errors were encoutered.
-        writeLog "[PARTIAL BACKUP] - '$source_path' partially saved in '$dest_path'. Some errors were encountered." "info"
-		echo -e "${YELLOW}[PARTIAL BACKUP]${RESET} - '$source_path' partially saved in '$dest_path'. Some errors were encountered, see log or report for more infos."
-    else
+#####################################################
+# NAME : success()
+# Handle rsync command success
+# Globals:
+#   None
+# Arguments:
+#   Comand exit status, source path, destination path
+# Output:
+# 	Standard output and logs
+######################################################
+function success {
+    local exit_code=$1
+    local source_path=$2
+    local dest_path=$3
+
+    if [ "$exit_code" -eq 0 ]
+    then
         writeLog "[SUCCESS] - '$source_path' successfully saved in '$dest_path'. No error was encountered !" "info"
 		echo -e "${GREEN}[SUCCESS]${RESET} '$source_path' successfully saved in '$dest_path'. No error was encountered !"
     fi
